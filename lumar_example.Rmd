@@ -1,0 +1,53 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+super <- read.csv('data_raw/league_table.csv', na.strings = c("", "*"))
+```
+
+# Cross tab example
+```{r}
+super %>%
+  group_by(fund_type) %>%
+  summarise(n = n(),
+            total_assets_m = sum(total_assets) / 1000,
+            min_5 = min(five.year_rate_of_return, na.rm = TRUE),
+            avg_5 = mean(five.year_rate_of_return, na.rm = TRUE),
+            med_5 = median(five.year_rate_of_return, na.rm = TRUE),
+            max_5 = max(five.year_rate_of_return, na.rm = TRUE),
+            min_10 = min(ten.year_rate_of_return, na.rm = TRUE),
+            avg_10 = mean(ten.year_rate_of_return, na.rm = TRUE),
+            med_10 = median(ten.year_rate_of_return, na.rm = TRUE),
+            max_10 = max(ten.year_rate_of_return, na.rm = TRUE),
+            op_expense_ratio = mean(operating_expense_ratio, na.rm = TRUE))
+```
+
+# Graph of returns by fund type
+
+```{r}
+super %>%
+  filter(fund_type != "Retail - ERF") %>%
+  ggplot(aes(ten.year_rate_of_return, colour = rse_licensee_profit_status)) + 
+    geom_density() + 
+    theme_bw() +
+    scale_x_continuous(labels = scales::percent) + 
+    theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+          legend.title = element_blank(), plot.caption = element_text(hjust = 0),
+          panel.grid.minor = element_blank()) + 
+    labs(x = "", y = "", title = "Distribution of super returns by fund type",
+         subtitle = "10 year rate-of-return",
+         caption = "Source: APRA super fund performance statistics, February 2017")
+```
+
+# A model
+
+```{r}
+fit_lm <- lm(ten.year_rate_of_return ~ total_assets + 
+               rse_licensee_profit_status + total_number_of_member_accounts,
+             data = super)
+summary(fit_lm)
+```
